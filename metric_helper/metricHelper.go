@@ -39,15 +39,17 @@ type BytesPerSecondRecord struct {
 }
 
 type Metrics struct {
-	InsertCountPerSecondRecord     *CountPerSecondRecord
-	QueryCountPerSecondRecord      *CountPerSecondRecord
-	UpdateCountPerSecondRecord     *CountPerSecondRecord
-	DeleteCountPerSecondRecord     *CountPerSecondRecord
-	GetmoreCountPerSecondRecord    *CountPerSecondRecord
-	CommandCountPerSecondRecord    *CountPerSecondRecord
-	NetworkInBytesPerSecondRecord  *BytesPerSecondRecord
-	NetworkOutBytesPerSecondRecord *BytesPerSecondRecord
-	CheckpointCountPerSecondRecord *CountPerSecondRecord
+	InsertCountPerSecond     float64
+	QueryCountPerSecond      float64
+	UpdateCountPerSecond     float64
+	DeleteCountPerSecond     float64
+	GetmoreCountPerSecond    float64
+	CommandCountPerSecond    float64
+	NetworkInBytesPerSecond  float64
+	NetworkOutBytesPerSecond float64
+	CheckpointCountPerSecond float64
+	StartTime                time.Time
+	EndTime                  time.Time
 }
 
 var previousStatus *mongowrapper.ServerStatusStats
@@ -59,15 +61,17 @@ func ExtractMetrics(status *mongowrapper.ServerStatusStats) *Metrics {
 		return nil
 	}
 	metrics = Metrics{
-		InsertCountPerSecondRecord:     getCountPerSecondByAction(ActionInsert, status),
-		QueryCountPerSecondRecord:      getCountPerSecondByAction(ActionQuery, status),
-		UpdateCountPerSecondRecord:     getCountPerSecondByAction(ActionUpdate, status),
-		DeleteCountPerSecondRecord:     getCountPerSecondByAction(ActionDelete, status),
-		GetmoreCountPerSecondRecord:    getCountPerSecondByAction(ActionGetmore, status),
-		CommandCountPerSecondRecord:    getCountPerSecondByAction(ActionCommand, status),
-		NetworkInBytesPerSecondRecord:  getBytesPerSecondByAction(DataNetworkIn, status),
-		NetworkOutBytesPerSecondRecord: getBytesPerSecondByAction(DataNetworkOut, status),
-		CheckpointCountPerSecondRecord: getCountPerSecondByAction(ActionCheckpoint, status),
+		InsertCountPerSecond:     getCountPerSecondByAction(ActionInsert, status).Count,
+		QueryCountPerSecond:      getCountPerSecondByAction(ActionQuery, status).Count,
+		UpdateCountPerSecond:     getCountPerSecondByAction(ActionUpdate, status).Count,
+		DeleteCountPerSecond:     getCountPerSecondByAction(ActionDelete, status).Count,
+		GetmoreCountPerSecond:    getCountPerSecondByAction(ActionGetmore, status).Count,
+		CommandCountPerSecond:    getCountPerSecondByAction(ActionCommand, status).Count,
+		NetworkInBytesPerSecond:  getBytesPerSecondByAction(DataNetworkIn, status).Bytes,
+		NetworkOutBytesPerSecond: getBytesPerSecondByAction(DataNetworkOut, status).Bytes,
+		CheckpointCountPerSecond: getCountPerSecondByAction(ActionCheckpoint, status).Count,
+		StartTime:                previousStatus.LocalTime,
+		EndTime:                  status.LocalTime,
 	}
 	previousStatus = status
 	return &metrics

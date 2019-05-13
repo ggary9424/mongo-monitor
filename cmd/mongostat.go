@@ -102,16 +102,16 @@ func logMetricsPeriodically(
 			}
 			logrus.Infof(
 				"    *%d    *%d     *%d     *%d       %d       %d        %d       %d          %d\n",
-				int64(metrics.InsertCountPerSecondRecord.Count),
-				int64(metrics.QueryCountPerSecondRecord.Count),
-				int64(metrics.UpdateCountPerSecondRecord.Count),
-				int64(metrics.DeleteCountPerSecondRecord.Count),
-				int64(metrics.GetmoreCountPerSecondRecord.Count),
-				int64(metrics.CommandCountPerSecondRecord.Count),
-				int64(metrics.NetworkInBytesPerSecondRecord.Bytes),
-				int64(metrics.NetworkOutBytesPerSecondRecord.Bytes),
+				int64(metrics.InsertCountPerSecond),
+				int64(metrics.QueryCountPerSecond),
+				int64(metrics.UpdateCountPerSecond),
+				int64(metrics.DeleteCountPerSecond),
+				int64(metrics.GetmoreCountPerSecond),
+				int64(metrics.CommandCountPerSecond),
+				int64(metrics.NetworkInBytesPerSecond),
+				int64(metrics.NetworkOutBytesPerSecond),
 				// int64(status.Connections.Current),
-				int64(metrics.CheckpointCountPerSecondRecord.Count),
+				int64(metrics.CheckpointCountPerSecond),
 			)
 			time.Sleep(interval)
 		}
