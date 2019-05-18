@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	metrichelper "mongo-monitor/metric_helper"
 	"mongo-monitor/mongowrapper"
 	"mongo-monitor/storage"
+	"mongo-monitor/termui"
 	"os"
 	"os/signal"
-	"syscall"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -26,42 +28,81 @@ var mongostatCmd = &cobra.Command{
 	},
 }
 
+var usingUI = false
+
 func init() {
+	pf := mongostatCmd.PersistentFlags()
+	pf.BoolVar(&usingUI, "ui", false, "if you want to use UI or not")
 	rootCmd.AddCommand(mongostatCmd)
 }
 
 func mongostat() {
-	var sigint chan os.Signal
-	running := true
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		sigint = make(chan os.Signal, 1)
+		defer wg.Done()
 
-		// interrupt signal sent from terminal
-		signal.Notify(sigint, os.Interrupt)
-		// sigterm signal sent from system
-		signal.Notify(sigint, syscall.SIGTERM)
+		sigs := make(chan os.Signal, 1)
+		done := make(chan bool, 1)
 
-		switch <-sigint {
-		case os.Interrupt:
-			logrus.Warn("Receive single os.Interrupt")
+		signal.Notify(sigs, os.Interrupt)
+
+		go func() {
+			_, ok := <-sigs
+			if ok {
+				fmt.Println("Receive single os.Interrupt")
+			} else {
+				fmt.Println("Close the sigs channel")
+			}
+			done <- true
+		}()
+
+	Loop:
+		for {
+			select {
+			case <-done:
+			case <-ctx.Done():
+				close(sigs)
+				break Loop
+			default:
+			}
 		}
-
-		running = false
 	}()
 
-	ctx := context.Background()
-	defer ctx.Done()
 	client, err := mongowrapper.CreateClient(viper.GetString("mongo.uri"))
 	if err != nil {
 		logrus.Error(err)
 		panic(err)
 	}
+
 	s := storage.CreateStorage(storage.Memory)
-	go recordMetricsPeriodically(ctx, client, s, 1*time.Second)
-	go logMetricsPeriodically(ctx, s, 1*time.Second)
-	for running {
-		time.Sleep(1 * time.Second)
-	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		recordMetricsPeriodically(ctx, client, s, 1*time.Second)
+		cancel()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if usingUI {
+			go func() {
+				termui.Render(ctx)
+				cancel()
+			}()
+			updateTermuiDataPeriodically(ctx, s, 1*time.Second)
+		} else {
+			logMetricsPeriodically(ctx, s, 1*time.Second)
+		}
+		cancel()
+	}()
+
+	wg.Wait()
 }
 
 func recordMetricsPeriodically(
@@ -113,6 +154,26 @@ func logMetricsPeriodically(
 				// int64(status.Connections.Current),
 				int64(metrics.CheckpointCountPerSecond),
 			)
+			time.Sleep(interval)
+		}
+	}
+}
+
+func updateTermuiDataPeriodically(
+	ctx context.Context,
+	s storage.Storage,
+	interval time.Duration,
+) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			ms, err := s.FetchLastFewMetricsSlice(50)
+			if _, ok := err.(*storage.DataNotFound); ok {
+				continue
+			}
+			termui.UpdateMetricsSlice(ms)
 			time.Sleep(interval)
 		}
 	}

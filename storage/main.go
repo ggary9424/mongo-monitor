@@ -6,7 +6,7 @@ import (
 
 type Storage interface {
 	FetchLastMetrics() (metrichelper.Metrics, error)
-	FetchLastFewMetricsSlice(count int) []metrichelper.Metrics
+	FetchLastFewMetricsSlice(count int) (metrichelper.MetricsSlice, error)
 	RecordMetrics(metrichelper.Metrics) error
 }
 

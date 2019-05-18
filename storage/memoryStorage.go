@@ -21,8 +21,12 @@ func (storage *MemoryStorage) FetchLastMetrics() (metrichelper.Metrics, error) {
 	return records[len(records)-1], nil
 }
 
-func (storage *MemoryStorage) FetchLastFewMetricsSlice(count int) []metrichelper.Metrics {
-	return []metrichelper.Metrics{}
+func (storage *MemoryStorage) FetchLastFewMetricsSlice(count int) (metrichelper.MetricsSlice, error) {
+	if len(records) < 1 {
+		return metrichelper.MetricsSlice{}, &DataNotFound{}
+	}
+	start := (map[bool]int{true: len(records) - count, false: 0})[len(records)-count > 0]
+	return records[start:], nil
 }
 
 func (storage *MemoryStorage) RecordMetrics(metrics metrichelper.Metrics) error {

@@ -52,6 +52,20 @@ type Metrics struct {
 	EndTime                  time.Time
 }
 
+type MetricsSlice []Metrics
+
+func (ms MetricsSlice) Len() int {
+	return len(ms)
+}
+
+func (ms MetricsSlice) Less(i, j int) bool {
+	return ms[i].EndTime.Before(ms[j].EndTime)
+}
+
+func (ms MetricsSlice) Swap(i, j int) {
+	ms[i], ms[j] = ms[j], ms[i]
+}
+
 var previousStatus *mongowrapper.ServerStatusStats
 
 func ExtractMetrics(status *mongowrapper.ServerStatusStats) *Metrics {
