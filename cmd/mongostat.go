@@ -9,6 +9,7 @@ import (
 	"mongo-monitor/termui"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,21 +19,31 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var usingUI = false
+var interval = 1 * time.Millisecond
+
 // mongostatCmd will run mongostat function
 var mongostatCmd = &cobra.Command{
 	Use:   "mongostat",
 	Short: "Just like mongostat command",
 	Long:  "Just like mongostat command",
 	Run: func(cmd *cobra.Command, args []string) {
+		i, err := strconv.Atoi(cmd.Flag("interval").Value.String())
+		if err != nil {
+			panic("The parameter interval should number")
+		}
+		if i < 1 {
+			panic("The parameter interval should be greater than 1 millisecond")
+		}
+		interval = time.Duration(i) * time.Millisecond
 		mongostat()
 	},
 }
 
-var usingUI = false
-
 func init() {
 	pf := mongostatCmd.PersistentFlags()
 	pf.BoolVar(&usingUI, "ui", false, "if you want to use UI or not")
+	pf.Uint("interval", 1, "the interval (millisecond) of redraw mongostat UI and interval of updating and fetching mongo data")
 	rootCmd.AddCommand(mongostatCmd)
 }
 
@@ -176,6 +187,7 @@ func updateTermuiDataPeriodically(
 		default:
 			ms, err := s.FetchLastFewMetricsSlice(50)
 			if _, ok := err.(*storage.DataNotFound); ok {
+				time.Sleep(interval)
 				continue
 			}
 			termui.UpdateMetricsSlice(ms)
