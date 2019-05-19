@@ -77,7 +77,11 @@ func extractOpcounters() (
 	deleteCountSlice := make([]float64, 50)
 	getmoreCountSlice := make([]float64, 50)
 	commandCountSlice := make([]float64, 50)
+	XLabelMap := map[int]string{}
 	index := 0
+	for i := 0; i < 50; i++ {
+		XLabelMap[i] = "-"
+	}
 	for i := 50 - len(sortedMS); i < 50; i++ {
 		insertCountSlice[i] = sortedMS[index].InsertCountPerSecond
 		queryCountSlice[i] = sortedMS[index].QueryCountPerSecond
@@ -85,9 +89,9 @@ func extractOpcounters() (
 		deleteCountSlice[i] = sortedMS[index].DeleteCountPerSecond
 		getmoreCountSlice[i] = sortedMS[index].GetmoreCountPerSecond
 		commandCountSlice[i] = sortedMS[index].CommandCountPerSecond
+		XLabelMap[i] = sortedMS[index].EndTime.Format("15:04:05")
 		index++
 	}
-	XLabelMap := map[int]string{}
 	return insertCountSlice, queryCountSlice, updateCountSlice, deleteCountSlice, getmoreCountSlice, commandCountSlice, XLabelMap
 }
 
@@ -254,7 +258,7 @@ func getLayoutOpts(w *widgets) ([]container.Option, error) {
 const rootID = "root"
 
 // redrawInterval is how often termdash redraws the screen.
-const redrawInterval = 1 * time.Second
+const redrawInterval = 1 * time.Microsecond
 
 func Render(parentCtx context.Context) {
 	t, err := termbox.New(termbox.ColorMode(terminalapi.ColorMode256))
