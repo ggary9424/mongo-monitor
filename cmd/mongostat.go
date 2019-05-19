@@ -9,7 +9,6 @@ import (
 	"mongo-monitor/termui"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 	"time"
 
@@ -28,12 +27,9 @@ var mongostatCmd = &cobra.Command{
 	Short: "Just like mongostat command",
 	Long:  "Just like mongostat command",
 	Run: func(cmd *cobra.Command, args []string) {
-		i, err := strconv.Atoi(cmd.Flag("interval").Value.String())
-		if err != nil {
-			panic("The parameter interval should number")
-		}
-		if i < 1 {
-			panic("The parameter interval should be greater than 1 millisecond")
+		i := viper.GetInt("interval")
+		if i == 0 {
+			panic("The parameter interval must be greater than 0.")
 		}
 		interval = time.Duration(i) * time.Millisecond
 		mongostat()
@@ -42,8 +38,12 @@ var mongostatCmd = &cobra.Command{
 
 func init() {
 	pf := mongostatCmd.PersistentFlags()
+
 	pf.BoolVar(&usingUI, "ui", false, "if you want to use UI or not")
-	pf.Uint("interval", 1, "the interval (millisecond) of redraw mongostat UI and interval of updating and fetching mongo data")
+	pf.Uint("interval", 1, "the interval (millisecond) of redrawing mongostat UI and interval of updating and fetching mongo data")
+
+	viper.BindPFlag("interval", mongostatCmd.PersistentFlags().Lookup("interval"))
+
 	rootCmd.AddCommand(mongostatCmd)
 }
 
@@ -88,7 +88,7 @@ func mongostat() {
 		println("cancel")
 	}()
 
-	client, err := mongowrapper.CreateClient(ctx, viper.GetString("mongo.uri"))
+	client, err := mongowrapper.CreateClient(ctx, mongoURI)
 	if err != nil {
 		logrus.Error(err)
 		panic(err)
