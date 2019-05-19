@@ -2,11 +2,19 @@ package storage
 
 import (
 	metrichelper "mongo-monitor/metric_helper"
+	"sync"
 )
 
 type MemoryStorage struct{}
 
-var records []metrichelper.Metrics
+type recordsWithMutex struct {
+	records []metrichelper.Metrics
+	mutex   sync.Mutex
+}
+
+var recordsWM = recordsWithMutex{
+	records: []metrichelper.Metrics{},
+}
 
 type DataNotFound struct{}
 
@@ -15,6 +23,9 @@ func (e *DataNotFound) Error() string {
 }
 
 func (storage *MemoryStorage) FetchLastMetrics() (metrichelper.Metrics, error) {
+	recordsWM.mutex.Lock()
+	records := recordsWM.records
+	recordsWM.mutex.Unlock()
 	if len(records) < 1 {
 		return metrichelper.Metrics{}, &DataNotFound{}
 	}
@@ -22,6 +33,9 @@ func (storage *MemoryStorage) FetchLastMetrics() (metrichelper.Metrics, error) {
 }
 
 func (storage *MemoryStorage) FetchLastFewMetricsSlice(count int) (metrichelper.MetricsSlice, error) {
+	recordsWM.mutex.Lock()
+	records := recordsWM.records
+	recordsWM.mutex.Unlock()
 	if len(records) < 1 {
 		return metrichelper.MetricsSlice{}, &DataNotFound{}
 	}
@@ -30,7 +44,9 @@ func (storage *MemoryStorage) FetchLastFewMetricsSlice(count int) (metrichelper.
 }
 
 func (storage *MemoryStorage) RecordMetrics(metrics metrichelper.Metrics) error {
-	records = append(records, metrics)
+	recordsWM.mutex.Lock()
+	recordsWM.records = append(recordsWM.records, metrics)
+	recordsWM.mutex.Unlock()
 	return nil
 }
 
