@@ -41,10 +41,10 @@ type ServerStatusStats struct {
 }
 
 // GetServerStatus returns the server status info.
-func GetServerStatus(client *mongo.Client) *ServerStatusStats {
+func GetServerStatus(ctx context.Context, client *mongo.Client) *ServerStatusStats {
 	serverStatus := &ServerStatusStats{}
 	result := client.Database("admin").RunCommand(
-		context.Background(),
+		ctx,
 		bsonx.Doc{
 			{"serverStatus", bsonx.Int32(1)},
 			{"recordStats", bsonx.Int32(0)},

@@ -64,15 +64,20 @@ func mongostat() {
 		for {
 			select {
 			case <-done:
+				close(sigs)
+				break Loop
 			case <-ctx.Done():
 				close(sigs)
 				break Loop
 			default:
 			}
 		}
+	_:
+		cancel()
+		println("cancel")
 	}()
 
-	client, err := mongowrapper.CreateClient(viper.GetString("mongo.uri"))
+	client, err := mongowrapper.CreateClient(ctx, viper.GetString("mongo.uri"))
 	if err != nil {
 		logrus.Error(err)
 		panic(err)
@@ -83,7 +88,7 @@ func mongostat() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		recordMetricsPeriodically(ctx, client, s, 1*time.Second)
+		recordMetricsPeriodically(ctx, client, s, 1*time.Millisecond)
 		cancel()
 	}()
 
@@ -95,9 +100,9 @@ func mongostat() {
 				termui.Render(ctx)
 				cancel()
 			}()
-			updateTermuiDataPeriodically(ctx, s, 1*time.Second)
+			updateTermuiDataPeriodically(ctx, s, 1*time.Millisecond)
 		} else {
-			logMetricsPeriodically(ctx, s, 1*time.Second)
+			logMetricsPeriodically(ctx, s, 1*time.Millisecond)
 		}
 		cancel()
 	}()
@@ -116,7 +121,7 @@ func recordMetricsPeriodically(
 		case <-ctx.Done():
 			return nil
 		default:
-			status := mongowrapper.GetServerStatus(client)
+			status := mongowrapper.GetServerStatus(ctx, client)
 			metrics := metrichelper.ExtractMetrics(status)
 			if metrics != nil {
 				s.RecordMetrics(*metrics)

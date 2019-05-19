@@ -7,9 +7,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func CreateClient(uri string) (*mongo.Client, error) {
+func CreateClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	client, err := mongo.Connect(
-		context.Background(),
+		ctx,
 		options.Client().ApplyURI(uri),
 		nil,
 	)
