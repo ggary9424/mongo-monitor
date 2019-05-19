@@ -258,8 +258,9 @@ func getLayoutOpts(w *widgets) ([]container.Option, error) {
 const rootID = "root"
 
 // redrawInterval is how often termdash redraws the screen.
-const redrawInterval = 1 * time.Microsecond
+var redrawInterval = 100 * time.Microsecond
 
+// Render is starting the mongostat UI on terminal
 func Render(parentCtx context.Context) {
 	t, err := termbox.New(termbox.ColorMode(terminalapi.ColorMode256))
 	if err != nil {

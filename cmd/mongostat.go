@@ -40,7 +40,7 @@ func init() {
 	pf := mongostatCmd.PersistentFlags()
 
 	pf.BoolVar(&usingUI, "ui", false, "if you want to use UI or not")
-	pf.Uint("interval", 1, "the interval (millisecond) of redrawing mongostat UI and interval of updating and fetching mongo data")
+	pf.Uint("interval", 1, "the interval (millisecond) updating and fetching mongo data")
 
 	viper.BindPFlag("interval", mongostatCmd.PersistentFlags().Lookup("interval"))
 
