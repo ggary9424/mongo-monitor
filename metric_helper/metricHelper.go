@@ -122,7 +122,13 @@ func getCountPerSecondByAction(
 		previousCount = previousStatus.WiredTiger.Transaction.Checkpoints
 		currentCount = status.WiredTiger.Transaction.Checkpoints
 	}
-	countPerSecond := (currentCount - previousCount) / float64(currentTime.Unix()-previousTime.Unix())
+	timeDiff := currentTime.Unix() - previousTime.Unix()
+	var countPerSecond float64
+	if timeDiff == 0 {
+		countPerSecond = currentCount - previousCount
+	} else {
+		countPerSecond = (currentCount - previousCount) / float64(currentTime.Unix()-previousTime.Unix())
+	}
 
 	return &CountPerSecondRecord{
 		ActionType: actionType,
